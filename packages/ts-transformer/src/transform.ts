@@ -181,6 +181,8 @@ export interface Opts {
    * Whether to preserve whitespace and newlines.
    */
   preserveWhitespace?: boolean
+
+  ignoreTag?: boolean;
 }
 
 const DEFAULT_OPTS: Omit<Opts, 'program'> = {
@@ -509,7 +511,8 @@ function extractMessageFromJsxComponent(
         : msg.defaultMessage,
       id: msg.id,
     },
-    opts.ast
+    opts.ast,
+    opts.ignoreTag,
   )
 
   if (ts.isJsxOpeningElement(node)) {
@@ -534,7 +537,8 @@ function setAttributesInObject(
   factory: typescript.NodeFactory,
   node: typescript.ObjectLiteralExpression,
   msg: MessageDescriptor,
-  ast?: boolean
+  ast?: boolean,
+  skipTag?: boolean
 ) {
   const newProps = [
     factory.createPropertyAssignment('id', factory.createStringLiteral(msg.id)),
@@ -543,7 +547,7 @@ function setAttributesInObject(
           factory.createPropertyAssignment(
             'defaultMessage',
             ast
-              ? messageASTToTSNode(factory, parse(msg.defaultMessage))
+              ? messageASTToTSNode(factory, parse(msg.defaultMessage, { skipTag: skipTag }))
               : factory.createStringLiteral(msg.defaultMessage)
           ),
         ]
@@ -572,7 +576,8 @@ function generateNewProperties(
   factory: typescript.NodeFactory,
   node: typescript.JsxAttributes,
   msg: MessageDescriptor,
-  ast?: boolean
+  ast?: boolean,
+  skipTag?: boolean
 ) {
   const newProps = [
     factory.createJsxAttribute(
@@ -586,7 +591,7 @@ function generateNewProperties(
             ast
               ? factory.createJsxExpression(
                   undefined,
-                  messageASTToTSNode(factory, parse(msg.defaultMessage))
+                  messageASTToTSNode(factory, parse(msg.defaultMessage, { skipTag }))
                 )
               : factory.createStringLiteral(msg.defaultMessage)
           ),
@@ -669,7 +674,8 @@ function extractMessagesFromCallExpression(
                   : msgs[i].defaultMessage,
                 id: msgs[i] ? msgs[i].id : '',
               },
-              opts.ast
+              opts.ast,
+              opts.ignoreTag
             )
           )
         })
@@ -713,7 +719,8 @@ function extractMessagesFromCallExpression(
                 : msg.defaultMessage,
               id: msg.id,
             },
-            opts.ast
+            opts.ast,
+            opts.ignoreTag,
           ),
           ...restArgs,
         ]
